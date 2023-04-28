@@ -1,0 +1,26 @@
+To start, let’s create a new directory, for example, ‘scheduler-node’, and install the necessary libraries into it by running the next command:
+
+mkdir scheduler-node
+cd scheduler-node
+npm install express --save
+npm install mongodb@"^2.0.0" --save
+npm install mongoskin --save
+Then we create the base of our application – app.js file in the ‘scheduler-node’ directory – with the following content:
+
+var express = require('express');
+var path = require('path');
+var bodyParser = require("body-parser");
+
+//connect to the mongoDB
+var db = require('mongoskin').db("mongodb://localhost/testdb", { w: 0});
+    db.bind('event');
+
+//create express app, use public folder for static files
+var app = express();
+app.use(express.static(path.join(__dirname, 'public')));
+
+//is necessary for parsing POST request
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.listen(3000);
