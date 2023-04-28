@@ -1,0 +1,49 @@
+Adding, Editing, and Deleting Events
+ 
+To add the ability to add, edit, and delete events in the calendar, we need to add the code that initializes dataprocessor to the index.html file:
+
+        scheduler.config.xml_date="%Y-%m-%d %H:%i";
+
+        var dp = new dataProcessor("/data");
+        dp.init(scheduler);
+        dp.setTransactionMode("POST", false);
+The first line defines the format the dates will take while going back to the server. We are using default year-month-day order that can be parsed by MongoDB. The following block initializes dataprocessor and switches it to the mode of simple POST sending. From now on, each time when the data in the scheduler changes, dataprocessor will call “/data” url and will pass all the properties of the changed event.
+
+Let’s now go over to the server code and add one more handler to app.js:
+
+app.post('/data', function(req, res){
+    var data = req.body;
+
+    //get operation type
+    var mode = data["!nativeeditor_status"];
+    //get id of record
+    var sid = data.id;
+    var tid = sid;
+
+    //remove properties which we do not want to save in DB
+    delete data.id;
+    delete data["!nativeeditor_status"];
+
+
+    //output confirmation response
+    function update_response(err, result){
+        if (err)
+            mode = "error";
+        else if (mode == "inserted")
+            tid = data._id;
+
+        res.setHeader("Content-Type","application/json");
+        res.send({action: mode, sid: sid, tid: tid});
+
+    }
+
+    //run db operation
+    if (mode == "updated")
+        db.event.updateById( sid, data, update_response);
+    else if (mode == "inserted")
+        db.event.insert(data, update_response);
+    else if (mode == "deleted")
+        db.event.removeById( sid, update_response);
+    else
+        res.send("Not supported operation");
+});
